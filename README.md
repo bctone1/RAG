@@ -1,8 +1,12 @@
 ﻿# RAG ChatBot 
  
- (FastAPI · LangChain/LangGraph · PostgreSQL/pgvector)
+- FastAPI
+- LangChain/LangGraph
+- PostgreSQL/pgvector
 
-문서 인제스트 → 하이브리드 검색(BM25+벡터) → LLM 생성 응답까지 하나의 백엔드로 제공합니다. FastAPI, SQLAlchemy, Alembic, PostgreSQL(pgvector), LangChain/LangGraph를 사용합니다.
+문서 인제스트 → 하이브리드 검색(BM25+벡터) → LLM 생성 응답까지 하나의 백엔드로 제공
+
+**FastAPI, SQLAlchemy, Alembic, PostgreSQL(pgvector), LangChain/LangGraph** 를 사용합니다.
 
 ## 핵심 기능
 * 파일 업로드→OCR→청킹→임베딩→pgvector 저장
@@ -273,6 +277,7 @@ pytest -q
 * [ ] 온라인 학습형 우선순위 라우터(비용·지연·정확도 최적화)
 * [ ] 세션 기반 장기 메모리 강화
 * [ ] 벤치마크 스위트 및 리더보드
+
 
 
 
