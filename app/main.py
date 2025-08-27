@@ -6,8 +6,10 @@ from fastapi.staticfiles import StaticFiles
 import os
 import uvicorn
 
+# from app.api.v1.test_ingestion import router as ingestion_router
+
 app = FastAPI()
-app.include_router(v1)
+app.include_router(v1, prefix="/api/v1")
 app.mount("/file", StaticFiles(directory="file"), name="file")
 
 app.add_middleware(

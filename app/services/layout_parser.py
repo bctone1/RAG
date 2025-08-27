@@ -1,5 +1,7 @@
 import pymupdf
 from glob import glob
+import json
+import requests
 from PIL import Image
 import os, requests, json, sys
 from dotenv import load_dotenv
@@ -59,8 +61,8 @@ class LayoutAnalyzer:
          :param input_file: 분석할 PDF 파일 경로
          :param output_file: 분석 결과를 저장할 JSON 파일 경로
         """
-        input_file = "test.pdf"
-        output_file = "test.json"
+        input_file = "../../tests/test.pdf"
+        output_file = "../../tests/test.json"
         # API 요청 보내기
         response = requests.post(
             "https://api.upstage.ai/v1/document-ai/layout-analysis",
