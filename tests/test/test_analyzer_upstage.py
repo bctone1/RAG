@@ -13,7 +13,7 @@ def test_analyzer_mock(monkeypatch, tmp_path: Path):
     import requests
     monkeypatch.setattr(requests, "post", fake_post)
 
-    src = Path("test.pdf")  # 실제 파일 존재 필요 없음. open은 analyzer 내부에서 requests만 사용.
+    src = Path("../../test.pdf")  # 실제 파일 존재 필요 없음. open은 analyzer 내부에서 requests만 사용.
     # monkeypatch로 파일 open 경로를 대체하려면 더 감쌀 수 있지만 여기선 post만 목킹
     out = LayoutAnalyzer(api_key="x").analyze(src)
     assert Path(out).suffix == ".json"

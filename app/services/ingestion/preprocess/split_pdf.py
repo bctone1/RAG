@@ -1,32 +1,34 @@
-from __future__ import annotations
-from pathlib import Path
+import os
 from pypdf import PdfReader, PdfWriter
 
-def split_pdf(src: str | Path,
-              out_dir: str | Path | None = None,
-              batch_size: int = 10,
-              password: str | None = None) -> list[str]:
+def split_pdf(filepath, batch_size=10):
+    """
+    입력 PDF를 여러 개의 작은 PDF 파일로 분할
+    """
+    reader = PdfReader(str(filepath))
+    num_pages = len(reader.pages)
+    print(f"총 페이지 수: {num_pages}")
 
-    src = Path(src)
-    assert src.suffix.lower() == ".pdf", "PDF만 허용"
-    out_dir = Path(out_dir or src.parent)
-    out_dir.mkdir(parents=True, exist_ok=True)
+    ret = []
+    base = os.path.splitext(str(filepath))[0]
 
-    reader = PdfReader(str(src))
-    if reader.is_encrypted:
-        if not password:
-            raise ValueError("암호화된 PDF. password 필요")
-        reader.decrypt(password)
+    for start_page in range(0, num_pages, batch_size):
+        end_page = min(start_page + batch_size, num_pages) - 1
 
-    n = len(reader.pages)
-    ret: list[str] = []
-    for start in range(0, n, batch_size):
-        end = min(start + batch_size, n) - 1
-        out = out_dir / f"{src.stem}_{start:04d}_{end:04d}.pdf"
+        output_file = f"{base}_{start_page:04d}_{end_page:04d}.pdf"
+        print(f"분할 PDF 생성: {output_file}")
+
         writer = PdfWriter()
-        for i in range(start, end + 1):
+        for i in range(start_page, end_page + 1):
             writer.add_page(reader.pages[i])
-        with open(out, "wb") as f:
+
+        with open(output_file, "wb") as f:
             writer.write(f)
-        ret.append(str(out))
+
+        ret.append(output_file)
+
     return ret
+
+# 예시
+# sample_data = "test.pdf"
+# split_files = split_pdf(sample_data, batch_size=10)

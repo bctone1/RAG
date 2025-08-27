@@ -1,7 +1,5 @@
 import pymupdf
 from glob import glob
-import json
-import requests
 from PIL import Image
 import os, requests, json, sys
 from dotenv import load_dotenv
@@ -44,11 +42,7 @@ def split_pdf(filepath, batch_size=10):
 split_files = split_pdf(sample_data)
 
 # Upstage Layout Analyzer
-import os, requests, json, sys
-from dotenv import load_dotenv
-
 load_dotenv(override=True)
-
 
 class LayoutAnalyzer:
     def __init__(self, api_key):
@@ -61,7 +55,7 @@ class LayoutAnalyzer:
          :param input_file: 분석할 PDF 파일 경로
          :param output_file: 분석 결과를 저장할 JSON 파일 경로
         """
-        input_file = "../../tests/test.pdf"
+        input_file = "../../test.pdf"
         output_file = "../../tests/test.json"
         # API 요청 보내기
         response = requests.post(
@@ -92,6 +86,9 @@ for file in split_files:
     analyzed_files.append(analyzer.execute(file))
 
 analyzed_files
+
+
+
 
 class PDFImageProcessor:
     """

@@ -3,7 +3,7 @@ from pathlib import Path
 from app.services.ingestion import parser
 
 def test_parser_pipeline(tmp_path, monkeypatch):
-    pdf = Path("test.pdf")
+    pdf = Path("../../test.pdf")
 
     # split 목킹
     monkeypatch.setattr(parser, "split_pdf", lambda *a, **k: [str(tmp_path / "part_0000_0009.pdf")])

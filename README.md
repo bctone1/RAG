@@ -20,7 +20,7 @@
 
 ```
 [Upload] → loader/ocr → chunker → embed(router) → pgvector_store
-                                     │
+                                      │
 [Query] → retrieve(hybrid) → rerank? ─┤→ generate(llm/router) → Answer(+sources)
 ```
 
@@ -60,12 +60,12 @@ RAG/
 ├── alembic.ini
 └── README.md
 ```
-
+Endpoint Folder : `app/api/v1` 
 ## 요구 사항
 
-* Python 3.11+
+* Python 3.12+
 * Docker + Docker Compose
-* PostgreSQL 16+ with `pgvector`
+* PostgreSQL 16 with `pgvector`
 * (선택) Tesseract OCR 또는 클라우드 OCR
 
 ## 빠른 시작
@@ -75,11 +75,11 @@ RAG/
 `.env.example`를 복사해 `.env` 생성 후 값 설정:
 
 ```env
-# DB
+# DB(임시로컬)
 DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/postgres
 
 # Auth
-JWT_SECRET=change-me
+JWT_SECRET=change-me(임시)
 ACCESS_TOKEN_EXPIRE_MIN=60
 
 # Files
@@ -270,14 +270,14 @@ pytest -q
 * **DB**: PostgreSQL + pgvector, pg\_trgm
 * **RAG**: LangChain, LangGraph
 * **LLM/Embedding**: OpenAI, Anthropic, Google, Friendli(EXAONE), Hugging Face
-* **Infra**: Docker, Gunicorn, Nginx
+* **Infra**: Docker, ~~Gunicorn~~, Nginx
 
 ## 로드맵
+*우선 작업
 * [ ] 멀티모달 인제스트(PDF 내 이미지+표 구조화)
-* [ ] 온라인 학습형 우선순위 라우터(비용·지연·정확도 최적화)
-* [ ] 세션 기반 장기 메모리 강화
-* [ ] 벤치마크 스위트 및 리더보드
-
-
-
+* [ ] `*.확장자` pdf, jpg, txt, csv ... 판별하여 데이터 추출
+---
+* [ ]  우선순위 라우터(비용·지연·정확도 최적화)
+* [ ] 세션 기반 장기 메모리 강화(vector_store)
+* [ ] ~~벤치마크 스위트 및 리더보드~~
 

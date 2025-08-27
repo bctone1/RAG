@@ -59,7 +59,7 @@ class LayoutAnalyzer:
          :param input_file: 분석할 PDF 파일 경로
          :param output_file: 분석 결과를 저장할 JSON 파일 경로
         """
-        input_file = "test.pdf"
+        input_file = "../test.pdf"
         output_file = "test.json"
         # API 요청 보내기
         response = requests.post(
