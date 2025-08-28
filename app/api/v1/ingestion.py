@@ -6,7 +6,7 @@ from typing import List, Dict
 import os
 from dotenv import load_dotenv
 
-from app.schemas.test_ingestion import (
+from app.schemas.ingestion import (
     UploadResponse, SplitRequest, SplitResponse,
     AnalyzeRequest, AnalyzeResponse,
     ExtractRequest, ExtractResponse,
