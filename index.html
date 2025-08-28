@@ -49,12 +49,12 @@
       <div>
         <label>질의→검색→생성 (POST)</label>
         <input id="ragPath" type="text" value="/api/v1/rag/query" />
-        <div class="hint">서버 구현에 맞게 수정. 예: /api/v1/rag 또는 /LLM/RequestMessage</div>
+        <div class="hint">서버 구현에 맞게 수정 가능</div>
       </div>
       <div>
         <label>파일 업로드 (POST, multipart/form-data)</label>
-        <input id="uploadPath" type="text" value="/api/v1/files/upload" />
-        <div class="hint">서버 구현에 맞게 수정. files.py 라우트 확인</div>
+        <input id="uploadPath" type="text" value="/api/v1/ingestion/upload" />
+        <div class="hint">인제스트 업로드: /api/v1/ingestion/upload</div>
       </div>
     </div>
   </section>
@@ -77,7 +77,7 @@
     </div>
     <div class="row" style="margin-top:10px; align-items:center;">
       <button id="ask">질의 보내기</button>
-      <span class="hint">Body 스키마는 서버의 Pydantic(schema.rag.QueryRequest)에 맞춤</span>
+      <span class="hint">Body는 서버의 QueryRequest 스키마에 맞춤</span>
     </div>
     <div id="ragOut" class="mono" style="margin-top:12px;"></div>
   </section>
@@ -99,9 +99,38 @@
     </div>
     <div class="row" style="margin-top:10px; align-items:center;">
       <button id="upload">업로드</button>
-      <span class="hint">Form 필드명은 서버 구현(files.py) 참고. 기본: file, project_id, meta</span>
+      <span class="hint">Form 필드: file, project_id, meta</span>
     </div>
     <div id="upOut" class="mono" style="margin-top:12px;"></div>
+  </section>
+
+  <section class="card">
+    <h3 style="margin-top:0">Ingestion API 테스트</h3>
+    <div class="grid-2">
+      <div>
+        <label>pdf_path</label>
+        <input id="pdfPath" type="text" placeholder="예: C:\\path\\to\\test.pdf" />
+      </div>
+      <div>
+        <label>batch_size</label>
+        <input id="batchSize" type="text" value="10" />
+      </div>
+    </div>
+    <div class="grid-2" style="margin-top:10px;">
+      <div>
+        <button id="btnSplit" class="secondary">/ingestion/split</button>
+      </div>
+      <div>
+        <button id="btnAnalyze" class="secondary">/ingestion/analyze</button>
+      </div>
+      <div>
+        <button id="btnExtract" class="secondary">/ingestion/extract</button>
+      </div>
+      <div>
+        <button id="btnRun" class="secondary">/ingestion/run</button>
+      </div>
+    </div>
+    <div id="ingestOut" class="mono" style="margin-top:12px;"></div>
   </section>
 
   <section class="card">
@@ -166,7 +195,7 @@
   $('#upload').addEventListener('click', async () => {
     const f = $('#file').files[0];
     if (!f) { alert('파일을 선택하세요'); return; }
-    const path = $('#uploadPath').value.trim() || '/api/v1/files/upload';
+    const path = $('#uploadPath').value.trim() || '/api/v1/ingestion/upload';
     const fd = new FormData();
     fd.append('file', f, f.name);
     const pid = $('#upProjectId').value.trim();
@@ -178,7 +207,7 @@
     try {
       const res = await fetch(base() + path, {
         method: 'POST',
-        headers: headers(false), // FormData는 브라우저가 Content-Type 설정
+        headers: headers(false),
         body: fd
       });
       const text = await res.text();
@@ -190,6 +219,37 @@
     } finally {
       $('#upload').disabled = false;
     }
+  });
+
+  // Ingestion API buttons
+  async function postJSON(url, body, target) {
+    try {
+      const res = await fetch(url, { method: 'POST', headers: headers(true), body: JSON.stringify(body) });
+      const text = await res.text();
+      let data; try { data = JSON.parse(text); } catch { data = text; }
+      setOut(target, data);
+    } catch (e) { setOut(target, String(e)); }
+  }
+
+  $('#btnSplit').addEventListener('click', () => {
+    const body = { pdf_path: $('#pdfPath').value.trim(), batch_size: Number($('#batchSize').value || 10) };
+    postJSON(base() + '/api/v1/ingestion/split', body, $('#ingestOut'));
+  });
+
+  $('#btnAnalyze').addEventListener('click', () => {
+    const p = $('#pdfPath').value.trim();
+    const body = { pdf_paths: [p] }; // 키는 서버에서 .env 기본값 사용
+    postJSON(base() + '/api/v1/ingestion/analyze', body, $('#ingestOut'));
+  });
+
+  $('#btnExtract').addEventListener('click', () => {
+    const body = { pdf_path: $('#pdfPath').value.trim() };
+    postJSON(base() + '/api/v1/ingestion/extract', body, $('#ingestOut'));
+  });
+
+  $('#btnRun').addEventListener('click', () => {
+    const body = { pdf_path: $('#pdfPath').value.trim(), batch_size: Number($('#batchSize').value || 10) };
+    postJSON(base() + '/api/v1/ingestion/run', body, $('#ingestOut'));
   });
 </script>
 </body>
