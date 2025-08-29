@@ -17,8 +17,8 @@ from app.schemas.ingestion import (
 from app.services.ingestion.preprocess.split_pdf import split_pdf
 from app.services.ingestion.preprocess.analyzer_upstage import LayoutAnalyzer
 from app.services.ingestion.preprocess.extract_assets import PDFImageProcessor
-# render_html_md 가 별도면, PDFImageProcessor 내부에서 호출되도록 구성했거나
-# 필요 시 아래 import 후 사용
+
+# render_html_md 가 별도면, PDFImageProcessor 내부에서 호출되도록 구성했거나 필요 시 아래 import 후 사용
 # from app.services.ingestion.preprocess.render_html_md import render_html_and_md
 
 load_dotenv(override=True)
@@ -80,7 +80,7 @@ def extract_endpoint(req: ExtractRequest):
     if not pdf.exists():
         raise HTTPException(status_code=404, detail="pdf_path가 존재하지 않음")
     proc = PDFImageProcessor(str(pdf))
-    proc.extract_images()  # 내부에서 html/md 생성
+    proc.extract_images()  # 이미지추출 메서드 실행 html/md 생성
     base = pdf.with_suffix("")  # 폴더
     images = sorted([str(p.resolve()) for p in base.glob("page_*_figure_*.png")])
     html_path = base / f"{base.name}.html"
@@ -107,6 +107,7 @@ def run_endpoint(req: RunRequest):
         json_path = analyzer.execute(part)
         json_paths[str(Path(part).resolve())] = str(Path(json_path).resolve())
     # 3) extract + render
+    ## proc <- PDF 처리기(Processor) 인스턴스 의 변수
     proc = PDFImageProcessor(req.pdf_path)
     proc.extract_images()
     base = Path(req.pdf_path).with_suffix("")
