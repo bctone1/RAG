@@ -1,16 +1,10 @@
 import pymupdf
 from glob import glob
 from PIL import Image
-import os, requests, json, sys
-from dotenv import load_dotenv
-from pathlib import Path
+import os, requests, json
 import fitz  # PyMuPDF
 from bs4 import BeautifulSoup
 from markdownify import markdownify as markdown
-
-load_dotenv(override=True)
-
-sample_data = "test.pdf"
 
 def split_pdf(filepath, batch_size=10):
     """
@@ -39,24 +33,12 @@ def split_pdf(filepath, batch_size=10):
     input_pdf.close()
     return ret
 
-split_files = split_pdf(sample_data)
-
-# Upstage Layout Analyzer
-load_dotenv(override=True)
-
 class LayoutAnalyzer:
     def __init__(self, api_key):
         self.api_key = api_key
 
     def _upstage_layout_analysis(self, input_file):
-        """
-         레이아웃 분석 API 호출
-
-         :param input_file: 분석할 PDF 파일 경로
-         :param output_file: 분석 결과를 저장할 JSON 파일 경로
-        """
-        input_file = "../../test.pdf"
-        output_file = "../../tests/test.json"
+        """레이아웃 분석 API 호출"""
         # API 요청 보내기
         response = requests.post(
             "https://api.upstage.ai/v1/document-ai/layout-analysis",
@@ -74,18 +56,10 @@ class LayoutAnalyzer:
             with open(output_file, "w", encoding="utf-8") as f:
                 json.dump(response.json(), f, ensure_ascii=False, indent=2)
             return output_file
-        else:
-            raise ValueError(f"예상치 못한 상태 코드: {response.status_code}")
+        raise ValueError(f"예상치 못한 상태 코드: {response.status_code}")
 
     def execute(self, input_file):
         return self._upstage_layout_analysis(input_file)
-
-analyzer = LayoutAnalyzer(os.environ.get("UPSTAGE_API_KEY"))
-analyzed_files = []
-for file in split_files:
-    analyzed_files.append(analyzer.execute(file))
-
-analyzed_files
 
 
 
@@ -214,7 +188,30 @@ class PDFImageProcessor:
             f.write(md_out)
         print(f"Markdown 저장 완료: {md_path}")
 
-image_processor = PDFImageProcessor(sample_data)
-image_processor.extract_images()
+
+def analyze_layout(api_key: str, input_file: str) -> str:
+    """Analyze layout of a PDF and save results to JSON."""
+    analyzer = LayoutAnalyzer(api_key)
+    return analyzer.execute(input_file)
+
+
+def process_pdf_images(pdf_file: str) -> None:
+    """Extract images and generate HTML/Markdown from layout JSON."""
+    processor = PDFImageProcessor(pdf_file)
+    processor.extract_images()
+
+
+if __name__ == "__main__":
+    from dotenv import load_dotenv
+
+    load_dotenv(override=True)
+    sample_data = "test.pdf"
+    api_key = os.environ.get("UPSTAGE_API_KEY")
+
+    split_files = split_pdf(sample_data)
+    for file in split_files:
+        analyze_layout(api_key, file)
+
+    process_pdf_images(sample_data)
 
 
