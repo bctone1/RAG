@@ -1,5 +1,5 @@
 import os
-from pydantic import AnyUrl, Field
+from pydantic import AnyUrl
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
@@ -10,8 +10,10 @@ class Settings(BaseSettings):
         extra="ignore",            # 정의되지 않은 키 무시
     )
 
-    OPENAI_API_KEY: str
-    FRIENDLI_API_KEY: str
+    OPENAI_API_KEY: str | None = None
+    ANTHROPIC_API_KEY: str | None = None
+    GOOGLE_API_KEY: str | None = None
+    FRIENDLI_API_KEY: str | None = None
     UPLOAD_FOLDER: str = os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
         "file",
