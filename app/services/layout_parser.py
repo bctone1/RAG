@@ -42,6 +42,7 @@ def split_pdf(filepath, batch_size=10):
 split_files = split_pdf(sample_data)
 
 # Upstage Layout Analyzer
+load_dotenv(override=True)
 
 class LayoutAnalyzer:
     def __init__(self, api_key):

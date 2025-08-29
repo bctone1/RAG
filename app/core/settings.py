@@ -1,4 +1,3 @@
-import os
 from pydantic import AnyUrl, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -12,11 +11,7 @@ class Settings(BaseSettings):
 
     OPENAI_API_KEY: str
     FRIENDLI_API_KEY: str
-    UPLOAD_FOLDER: str = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-        "file",
-        "upload",
-    )
+    UPLOAD_FOLDER: str = "./file/upload"
     DEBUG: bool = False
     PORT: int = 5000
     DATABASE_URL: AnyUrl | None = None

@@ -1,7 +1,7 @@
 from app.api.v1.router import router as v1
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.core.settings import settings
+from app.core.config import UPLOAD_FOLDER
 from fastapi.staticfiles import StaticFiles
 import os
 import uvicorn
@@ -22,7 +22,7 @@ app.add_middleware(
 
 
 if __name__ == "__main__":
-    os.makedirs(settings.UPLOAD_FOLDER, exist_ok=True)
+    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
     uvicorn.run(app, host="0.0.0.0", port=5000)
 
 
