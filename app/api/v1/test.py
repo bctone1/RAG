@@ -2,7 +2,7 @@ from fastapi import APIRouter, Request, UploadFile, File
 from langchain.chains.llm import LLMChain
 from langchain_core.prompts import PromptTemplate
 
-from app.core.config import GOOGLE_API, CLAUDE_API, OPENAI_API
+from app.core.settings import settings
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_community.chat_models import ChatOpenAI
 import anthropic
@@ -19,7 +19,7 @@ async def googletest(request: Request):
     print(body["selected_model"])
 
     # LLM 호출
-    llm = ChatGoogleGenerativeAI(model=body["selected_model"], api_key=GOOGLE_API)
+    llm = ChatGoogleGenerativeAI(model=body["selected_model"], api_key=settings.GOOGLE_API_KEY)
     result = llm.invoke(body["messageInput"])
     print("LLM Result:", result.content)
 
@@ -28,7 +28,7 @@ async def googletest(request: Request):
 # 엔트로픽 모델 리스트 가져오기
 @router.post("/getModelList")
 async def getModelList(request: Request):
-    client = anthropic.Anthropic(api_key=CLAUDE_API)
+    client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
     result = client.models.list(limit=20)
     print(result)
     return{"response": "엔트로픽 모델리스트 테스트", "models":result}
@@ -36,7 +36,7 @@ async def getModelList(request: Request):
 # 오픈ai 모델 리스트 가져오기
 @router.post("/getModelList2")
 async def getModelList2(request: Request):
-    client2 = OpenAI(api_key=OPENAI_API)
+    client2 = OpenAI(api_key=settings.OPENAI_API_KEY)
     result = client2.models.list()
     print(result)
     return{"response": "OPENAI 모델", "models":result}
@@ -49,7 +49,7 @@ async def userInputPrompt(request: Request):
         model_name="gpt-3.5-turbo",
         temperature=0,
         streaming=False,
-        openai_api_key=OPENAI_API
+        openai_api_key=settings.OPENAI_API_KEY
     )
 
     template = """
