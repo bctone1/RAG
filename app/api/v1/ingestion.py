@@ -69,7 +69,10 @@ def analyze_endpoint(req: AnalyzeRequest):
         p = Path(pdf_path)
         if not p.exists():
             raise HTTPException(status_code=404, detail=f"없음: {pdf_path}")
-        json_path = analyzer.execute(str(p))
+        try:
+            json_path = analyzer.execute(str(p))
+        except ValueError as e:
+            raise HTTPException(status_code=502, detail=str(e))
         out[str(p.resolve())] = str(Path(json_path).resolve())
     return AnalyzeResponse(json_paths=out)
 
@@ -104,7 +107,10 @@ def run_endpoint(req: RunRequest):
     analyzer = LayoutAnalyzer(api_key)
     json_paths: Dict[str, str] = {}
     for part in parts:
-        json_path = analyzer.execute(part)
+        try:
+            json_path = analyzer.execute(part)
+        except ValueError as e:
+            raise HTTPException(status_code=502, detail=str(e))
         json_paths[str(Path(part).resolve())] = str(Path(json_path).resolve())
     # 3) extract + render
     ## proc <- PDF 처리기(Processor) 인스턴스 의 변수

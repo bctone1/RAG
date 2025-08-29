@@ -26,13 +26,16 @@ class LayoutAnalyzer:
         data = {"ocr": "false"}  # 필요 시 "true" 로 변경
 
         with input_path.open("rb") as f:
-            response = requests.post(
-                url,
-                headers=headers,
-                data=data,
-                files={"document": f},
-                timeout=120,
-            )
+            try:
+                response = requests.post(
+                    url,
+                    headers=headers,
+                    data=data,
+                    files={"document": f},
+                    timeout=120,
+                )
+            except requests.RequestException as e:
+                raise ValueError(f"Upstage layout API 요청 실패: {e}") from e
 
         if response.status_code != 200:
             snippet = (response.text or "")[:200]
