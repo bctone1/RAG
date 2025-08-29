@@ -22,7 +22,7 @@ app.add_middleware(
 
 
 if __name__ == "__main__":
-    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+    # os.makedirs(UPLOAD_FOLDER, exist_ok=True)
     uvicorn.run(app, host="0.0.0.0", port=5000)
 
 
