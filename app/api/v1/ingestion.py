@@ -4,7 +4,6 @@ from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 from typing import List, Dict
 import os
-from dotenv import load_dotenv
 
 from app.schemas.ingestion import (
     UploadResponse, SplitRequest, SplitResponse,
@@ -20,8 +19,6 @@ from app.services.ingestion.preprocess.extract_assets import PDFImageProcessor
 
 # render_html_md 가 별도면, PDFImageProcessor 내부에서 호출되도록 구성했거나 필요 시 아래 import 후 사용
 # from app.services.ingestion.preprocess.render_html_md import render_html_and_md
-
-load_dotenv(override=True)
 
 router = APIRouter(prefix="/ingestion", tags=["ingestion"])
 

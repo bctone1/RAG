@@ -2,13 +2,10 @@ import pymupdf
 from glob import glob
 from PIL import Image
 import os, requests, json, sys
-from dotenv import load_dotenv
 from pathlib import Path
 import fitz  # PyMuPDF
 from bs4 import BeautifulSoup
 from markdownify import markdownify as markdown
-
-load_dotenv(override=True)
 
 sample_data = "test.pdf"
 
@@ -42,7 +39,6 @@ def split_pdf(filepath, batch_size=10):
 split_files = split_pdf(sample_data)
 
 # Upstage Layout Analyzer
-load_dotenv(override=True)
 
 class LayoutAnalyzer:
     def __init__(self, api_key):
