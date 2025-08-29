@@ -2,10 +2,13 @@ import pymupdf
 from glob import glob
 from PIL import Image
 import os, requests, json, sys
+from dotenv import load_dotenv
 from pathlib import Path
 import fitz  # PyMuPDF
 from bs4 import BeautifulSoup
 from markdownify import markdownify as markdown
+
+load_dotenv(override=True)
 
 sample_data = "test.pdf"
 

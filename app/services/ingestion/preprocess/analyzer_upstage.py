@@ -3,6 +3,8 @@ import json, os
 from pathlib import Path
 from typing import Union
 import requests
+from dotenv import load_dotenv
+load_dotenv(override=True)
 
 class LayoutAnalyzer:
     def __init__(self, api_key: str):
