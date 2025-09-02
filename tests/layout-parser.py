@@ -10,7 +10,7 @@ from markdownify import markdownify as markdown
 
 load_dotenv(override=True)
 
-sample_data = "test.pdf"
+sample_data = str(Path(__file__).resolve().parents[1] / "test.pdf")
 
 def split_pdf(filepath, batch_size=10):
     """
@@ -59,7 +59,7 @@ class LayoutAnalyzer:
          :param input_file: 분석할 PDF 파일 경로
          :param output_file: 분석 결과를 저장할 JSON 파일 경로
         """
-        input_file = "../test.pdf"
+        input_file = str(Path(__file__).resolve().parents[1] / "test.pdf")
         output_file = "test.json"
         # API 요청 보내기
         response = requests.post(

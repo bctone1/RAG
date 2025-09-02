@@ -1,14 +1,6 @@
 from fastapi import APIRouter
-from . import auth, files, rag, chat, admin, test,ingestion
-# from ...services import ingestion
+from . import auth, files, rag, chat_history, admin, test, ingestion, documents
 
-# router = APIRouter(prefix="/v1")
 router = APIRouter()
-for r in (auth, files, rag, chat, admin,test,ingestion):
+for r in (auth, files, rag, chat_history, admin, test, ingestion, documents):
     router.include_router(r.router)
-
-# router = APIRouter(prefix="/v1")
-# router.include_router(test.test_router)
-
-# from app.api.v1.ingestion import router as ingestion
-# router.include_router(ingestion, prefix="/api/v1")
