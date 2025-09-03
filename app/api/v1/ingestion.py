@@ -54,8 +54,12 @@ def split_endpoint(req: SplitRequest):
     pdf = Path(req.pdf_path)
     if not pdf.exists():
         raise HTTPException(status_code=404, detail="pdf_path가 존재하지 않음")
-    parts = split_pdf(str(pdf), batch_size=req.batch_size)
-    return SplitResponse(parts=[str(Path(p).resolve()) for p in parts])
+
+    out_dir = ARTIFACT_DIR / pdf.stem
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    parts = split_pdf(str(pdf), out_dir=out_dir, batch_size=req.batch_size)
+    return SplitResponse(parts=[str(Path(p).relative_to(ARTIFACT_DIR)) for p in parts])
 
 # --- Upstage Layout 분석 ---
 @router.post("/analyze", response_model=AnalyzeResponse)
@@ -99,33 +103,38 @@ def extract_endpoint(req: ExtractRequest):
 @router.post("/run", response_model=RunResponse)
 def run_endpoint(req: RunRequest):
     # 1) split
-    parts = split_pdf(req.pdf_path, batch_size=req.batch_size)
+    pdf_path = Path(req.pdf_path)
+    out_dir = ARTIFACT_DIR / pdf_path.stem
+    out_dir.mkdir(parents=True, exist_ok=True)
+    parts = split_pdf(str(pdf_path), out_dir=out_dir, batch_size=req.batch_size)
     # 2) analyze
     api_key = req.upstage_api_key or os.getenv("UPSTAGE_API_KEY")
     if not api_key:
         raise HTTPException(status_code=400, detail="UPSTAGE_API_KEY 필요")
     analyzer = LayoutAnalyzer(api_key)
     json_paths: Dict[str, str] = {}
+    json_files: List[str] = []
     for part in parts:
         try:
             json_path = analyzer.execute(part)
         except ValueError as e:
             raise HTTPException(status_code=502, detail=str(e))
-        json_paths[str(Path(part).resolve())] = str(Path(json_path).resolve())
+        json_files.append(json_path)
+        json_paths[str(Path(part).relative_to(ARTIFACT_DIR))] = str(Path(json_path).relative_to(ARTIFACT_DIR))
     # 3) extract + render
     ## proc <- PDF 처리기(Processor) 인스턴스 의 변수
-    proc = PDFImageProcessor(req.pdf_path)
+    proc = PDFImageProcessor(str(pdf_path), json_files=json_files, output_folder=str(out_dir))
     proc.extract_images()
-    base = Path(req.pdf_path).with_suffix("")
-    images = sorted([str(p.resolve()) for p in base.glob("page_*_figure_*.png")])
+    base = out_dir
+    images = sorted([str(p.relative_to(ARTIFACT_DIR)) for p in base.glob("page_*_figure_*.png")])
     html_path = base / f"{base.name}.html"
     md_path = base / f"{base.name}.md"
     return RunResponse(
-        parts=[str(Path(p).resolve()) for p in parts],
+        parts=[str(Path(p).relative_to(ARTIFACT_DIR)) for p in parts],
         json_paths=json_paths,
-        output_folder=str(base.resolve()),
-        html_path=str(html_path.resolve()),
-        md_path=str(md_path.resolve()),
+        output_folder=str(base.relative_to(ARTIFACT_DIR)),
+        html_path=str(html_path.relative_to(ARTIFACT_DIR)),
+        md_path=str(md_path.relative_to(ARTIFACT_DIR)),
         images=images,
     )
 
