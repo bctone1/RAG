@@ -56,8 +56,8 @@ class Embedding(Base):
     chunk = relationship("Chunk", back_populates="embedding")
 
 
-class ChatLog(Base):
-    __tablename__ = "chat_logs"
+class ChatHistory(Base):
+    __tablename__ = "chat_history"
 
     id = Column(BigInteger, primary_key=True, index=True)
     user_input = Column(Text, nullable=False)

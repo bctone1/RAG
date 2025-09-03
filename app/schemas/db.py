@@ -73,16 +73,16 @@ class EmbeddingRead(EmbeddingBase):
         orm_mode = True
 
 
-class ChatLogBase(BaseModel):
+class ChatHistoryBase(BaseModel):
     user_input: str
     llm_output: str
 
 
-class ChatLogCreate(ChatLogBase):
+class ChatHistoryCreate(ChatHistoryBase):
     pass
 
 
-class ChatLogRead(ChatLogBase):
+class ChatHistoryRead(ChatHistoryBase):
     id: int
     created_at: datetime
 

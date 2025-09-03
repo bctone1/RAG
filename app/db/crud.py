@@ -5,7 +5,7 @@ from app.schemas.db import (
     DocumentCreate,
     ChunkCreate,
     EmbeddingCreate,
-    ChatLogCreate,
+    ChatHistoryCreate,
 )
 
 
@@ -66,13 +66,13 @@ def create_embedding(db: Session, emb_in: EmbeddingCreate) -> models.Embedding:
     return db_obj
 
 
-def create_chatlog(db: Session, log_in: ChatLogCreate) -> models.ChatLog:
-    db_obj = models.ChatLog(**log_in.model_dump())
+def create_chathistory(db: Session, log_in: ChatHistoryCreate) -> models.ChatHistory:
+    db_obj = models.ChatHistory(**log_in.model_dump())
     db.add(db_obj)
     db.commit()
     db.refresh(db_obj)
     return db_obj
 
 
-def list_chatlogs(db: Session) -> list[models.ChatLog]:
-    return db.query(models.ChatLog).order_by(models.ChatLog.created_at.desc()).all()
+def list_chathistory(db: Session) -> list[models.ChatHistory]:
+    return db.query(models.ChatHistory).order_by(models.ChatHistory.created_at.desc()).all()
