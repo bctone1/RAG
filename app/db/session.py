@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from app.core.settings import settings
-import base as base
+from app.db import base
 import psycopg2
 engine = create_engine(str(settings.DATABASE_URL), future=True)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
