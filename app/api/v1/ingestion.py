@@ -82,12 +82,13 @@ def extract_endpoint(req: ExtractRequest):
     pdf = Path(req.pdf_path)
     if not pdf.exists():
         raise HTTPException(status_code=404, detail="pdf_path가 존재하지 않음")
-    proc = PDFImageProcessor(str(pdf))
+    # 산출물은 ARTIFACT_DIR/<원본파일명>/ 구조로 저장
+    base = ARTIFACT_DIR / pdf.stem
+    proc = PDFImageProcessor(str(pdf), output_folder=str(base))
     proc.extract_images()  # 이미지추출 메서드 실행 html/md 생성
-    base = pdf.with_suffix("")  # 폴더
     images = sorted([str(p.resolve()) for p in base.glob("page_*_figure_*.png")])
-    html_path = base / f"{base.name}.html"
-    md_path = base / f"{base.name}.md"
+    html_path = base / f"{pdf.stem}.html"
+    md_path = base / f"{pdf.stem}.md"
     return ExtractResponse(
         output_folder=str(base.resolve()),
         images=images,
@@ -114,9 +115,10 @@ def run_endpoint(req: RunRequest):
         json_paths[str(Path(part).resolve())] = str(Path(json_path).resolve())
     # 3) extract + render
     ## proc <- PDF 처리기(Processor) 인스턴스 의 변수
-    proc = PDFImageProcessor(req.pdf_path)
+    # 산출물은 ARTIFACT_DIR/<원본파일명>/ 구조로 저장
+    base = ARTIFACT_DIR / Path(req.pdf_path).stem
+    proc = PDFImageProcessor(req.pdf_path, output_folder=str(base))
     proc.extract_images()
-    base = Path(req.pdf_path).with_suffix("")
     images = sorted([str(p.resolve()) for p in base.glob("page_*_figure_*.png")])
     html_path = base / f"{base.name}.html"
     md_path = base / f"{base.name}.md"
