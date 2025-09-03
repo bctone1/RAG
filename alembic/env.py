@@ -6,7 +6,7 @@ from alembic import context
 from app.db.models import Base
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)
 
 config = context.config
 if config.config_file_name is not None:
