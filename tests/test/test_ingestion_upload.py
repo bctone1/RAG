@@ -20,7 +20,7 @@ def test_upload_file_returns_file_id(tmp_path):
     app.include_router(ingestion_router, prefix="/api/v1")
 
     engine = create_engine(os.environ["DATABASE_URL"], connect_args={"check_same_thread": False})
-    # SQLite에서 BigInteger 자동 증가 문제를 피하기 위해 수동으로 테이블 생성
+
     with engine.begin() as conn:
         conn.exec_driver_sql(
             """
