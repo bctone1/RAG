@@ -8,6 +8,7 @@ class UploadResponse(BaseModel):
     filename: str
     path: str
     size: int
+    file_id: int
 
 # PDF 분할 요청 파라미터
 class SplitRequest(BaseModel):

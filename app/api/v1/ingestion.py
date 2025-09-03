@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
@@ -17,6 +17,10 @@ from app.schemas.ingestion import (
 from app.services.ingestion.preprocess.split_pdf import split_pdf
 from app.services.ingestion.preprocess.analyzer_upstage import LayoutAnalyzer
 from app.services.ingestion.preprocess.extract_assets import PDFImageProcessor
+from sqlalchemy.orm import Session
+from app.db.session import get_db
+from app.db import crud
+from app.schemas.db import FileCreate
 
 # render_html_md 가 별도면, PDFImageProcessor 내부에서 호출되도록 구성했거나 필요 시 아래 import 후 사용
 # from app.services.ingestion.preprocess.render_html_md import render_html_and_md
@@ -33,7 +37,10 @@ for p in (UPLOAD_DIR, ARTIFACT_DIR):
 
 # --- 파일 업로드 ---
 @router.post("/upload", response_model=UploadResponse)
-async def upload_file(file: UploadFile = File(...)):
+async def upload_file(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+):
     if not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="PDF만 허용")
     dest = (UPLOAD_DIR / file.filename).resolve()
@@ -46,7 +53,20 @@ async def upload_file(file: UploadFile = File(...)):
         i += 1
     data = await file.read()
     dest.write_bytes(data)
-    return UploadResponse(filename=dest.name, path=str(dest), size=len(data))
+    db_file = crud.create_file(
+        db,
+        FileCreate(
+            original_name=file.filename,
+            mime_type=file.content_type or "application/pdf",
+            storage_path=str(dest),
+        ),
+    )
+    return UploadResponse(
+        filename=dest.name,
+        path=str(dest),
+        size=len(data),
+        file_id=db_file.id,
+    )
 
 # --- PDF 분할 ---
 @router.post("/split", response_model=SplitResponse)
