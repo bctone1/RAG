@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Any, List, Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class FileBase(BaseModel):
@@ -16,9 +16,7 @@ class FileCreate(FileBase):
 class FileRead(FileBase):
     id: int
     uploaded_at: datetime
-
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class DocumentBase(BaseModel):
@@ -34,9 +32,7 @@ class DocumentCreate(DocumentBase):
 class DocumentRead(DocumentBase):
     id: int
     created_at: datetime
-
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ChunkBase(BaseModel):
@@ -52,9 +48,7 @@ class ChunkCreate(ChunkBase):
 
 class ChunkRead(ChunkBase):
     id: int
-
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class EmbeddingBase(BaseModel):
@@ -69,8 +63,7 @@ class EmbeddingCreate(EmbeddingBase):
 
 
 class EmbeddingRead(EmbeddingBase):
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ChatHistoryBase(BaseModel):
@@ -85,6 +78,4 @@ class ChatHistoryCreate(ChatHistoryBase):
 class ChatHistoryRead(ChatHistoryBase):
     id: int
     created_at: datetime
-
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)

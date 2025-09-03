@@ -3,7 +3,7 @@ from pathlib import Path
 from app.services.ingestion.preprocess.extract_assets import extract_blocks_and_images
 
 def test_extract_blocks_and_images(tmp_path: Path, monkeypatch):
-    pdf = Path("../../test.pdf")
+    pdf = Path(__file__).resolve().parents[2] / "test.pdf"
     jp = tmp_path / "part_0000_0009.json"
     jp.write_text(json.dumps({"elements": [], "metadata": {"pages":[{"page":1,"width":612,"height":792}]}}), encoding="utf-8")
 

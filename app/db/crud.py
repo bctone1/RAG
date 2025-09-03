@@ -9,10 +9,18 @@ from app.schemas.db import (
 )
 
 
+def _commit(db: Session) -> None:
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+
+
 def create_file(db: Session, file_in: FileCreate) -> models.File:
     db_obj = models.File(**file_in.model_dump())
     db.add(db_obj)
-    db.commit()
+    _commit(db)
     db.refresh(db_obj)
     return db_obj
 
@@ -28,7 +36,7 @@ def list_files(db: Session) -> list[models.File]:
 def create_document(db: Session, doc_in: DocumentCreate) -> models.Document:
     db_obj = models.Document(**doc_in.model_dump())
     db.add(db_obj)
-    db.commit()
+    _commit(db)
     db.refresh(db_obj)
     return db_obj
 
@@ -44,7 +52,7 @@ def list_documents(db: Session) -> list[models.Document]:
 def create_chunk(db: Session, chunk_in: ChunkCreate) -> models.Chunk:
     db_obj = models.Chunk(**chunk_in.model_dump())
     db.add(db_obj)
-    db.commit()
+    _commit(db)
     db.refresh(db_obj)
     return db_obj
 
@@ -61,7 +69,7 @@ def list_chunks_by_document(db: Session, document_id: int) -> list[models.Chunk]
 def create_embedding(db: Session, emb_in: EmbeddingCreate) -> models.Embedding:
     db_obj = models.Embedding(**emb_in.model_dump())
     db.add(db_obj)
-    db.commit()
+    _commit(db)
     db.refresh(db_obj)
     return db_obj
 
@@ -69,7 +77,7 @@ def create_embedding(db: Session, emb_in: EmbeddingCreate) -> models.Embedding:
 def create_chathistory(db: Session, log_in: ChatHistoryCreate) -> models.ChatHistory:
     db_obj = models.ChatHistory(**log_in.model_dump())
     db.add(db_obj)
-    db.commit()
+    _commit(db)
     db.refresh(db_obj)
     return db_obj
 
