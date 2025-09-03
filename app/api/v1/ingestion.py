@@ -1,6 +1,7 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
+from shutil import copyfileobj
+from starlette.concurrency import run_in_threadpool
 from pathlib import Path
 from typing import List, Dict
 import os
@@ -44,9 +45,9 @@ async def upload_file(file: UploadFile = File(...)):
         suffix = dest.suffix
         dest = (UPLOAD_DIR / f"{stem}_{i}{suffix}").resolve()
         i += 1
-    data = await file.read()
-    dest.write_bytes(data)
-    return UploadResponse(filename=dest.name, path=str(dest), size=len(data))
+    with dest.open('wb') as out_file:
+        await run_in_threadpool(copyfileobj, file.file, out_file)
+    return UploadResponse(filename=dest.name, path=str(dest), size=dest.stat().st_size)
 
 # --- PDF 분할 ---
 @router.post("/split", response_model=SplitResponse)
