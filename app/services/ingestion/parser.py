@@ -1,10 +1,17 @@
 from __future__ import annotations
 from pathlib import Path
+import os
 from typing import TypedDict, List
+
 from .preprocess.split_pdf import split_pdf
 from .preprocess.analyzer_upstage import LayoutAnalyzer
 from .preprocess.extract_assets import extract_blocks_and_images, Block
 from .preprocess.render_html_md import render_all
+
+# 산출물 기본 저장 경로
+STORAGE_ROOT = Path(os.getenv("INGESTION_STORAGE", "file/ingestion")).resolve()
+ARTIFACT_DIR = STORAGE_ROOT / "artifacts"
+ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
 
 class ParseOutput(TypedDict):
     html_path: str
@@ -19,7 +26,8 @@ def parse_to_md_html(
     batch_size: int = 10,
 ) -> ParseOutput:
     input_pdf = Path(input_pdf)
-    work_dir = Path(work_dir or input_pdf.with_suffix(""))  # 같은 prefix 폴더
+    # 산출물은 ARTIFACT_DIR/<원본파일명>/ 구조로 저장
+    work_dir = Path(work_dir or ARTIFACT_DIR / input_pdf.stem)
     work_dir.mkdir(parents=True, exist_ok=True)
 
     # 1) 분할

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
+from fastapi import APIRouter, UploadFile, File, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
@@ -17,10 +17,6 @@ from app.schemas.ingestion import (
 from app.services.ingestion.preprocess.split_pdf import split_pdf
 from app.services.ingestion.preprocess.analyzer_upstage import LayoutAnalyzer
 from app.services.ingestion.preprocess.extract_assets import PDFImageProcessor
-from sqlalchemy.orm import Session
-from app.db.session import get_db
-from app.db import crud
-from app.schemas.db import FileCreate
 
 # render_html_md 가 별도면, PDFImageProcessor 내부에서 호출되도록 구성했거나 필요 시 아래 import 후 사용
 # from app.services.ingestion.preprocess.render_html_md import render_html_and_md
@@ -37,10 +33,7 @@ for p in (UPLOAD_DIR, ARTIFACT_DIR):
 
 # --- 파일 업로드 ---
 @router.post("/upload", response_model=UploadResponse)
-async def upload_file(
-    file: UploadFile = File(...),
-    db: Session = Depends(get_db),
-):
+async def upload_file(file: UploadFile = File(...)):
     if not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="PDF만 허용")
     dest = (UPLOAD_DIR / file.filename).resolve()
@@ -53,20 +46,7 @@ async def upload_file(
         i += 1
     data = await file.read()
     dest.write_bytes(data)
-    db_file = crud.create_file(
-        db,
-        FileCreate(
-            original_name=file.filename,
-            mime_type=file.content_type or "application/pdf",
-            storage_path=str(dest),
-        ),
-    )
-    return UploadResponse(
-        filename=dest.name,
-        path=str(dest),
-        size=len(data),
-        file_id=db_file.id,
-    )
+    return UploadResponse(filename=dest.name, path=str(dest), size=len(data))
 
 # --- PDF 분할 ---
 @router.post("/split", response_model=SplitResponse)
@@ -74,12 +54,8 @@ def split_endpoint(req: SplitRequest):
     pdf = Path(req.pdf_path)
     if not pdf.exists():
         raise HTTPException(status_code=404, detail="pdf_path가 존재하지 않음")
-
-    out_dir = ARTIFACT_DIR / pdf.stem
-    out_dir.mkdir(parents=True, exist_ok=True)
-
-    parts = split_pdf(str(pdf), out_dir=out_dir, batch_size=req.batch_size)
-    return SplitResponse(parts=[str(Path(p).relative_to(ARTIFACT_DIR)) for p in parts])
+    parts = split_pdf(str(pdf), batch_size=req.batch_size)
+    return SplitResponse(parts=[str(Path(p).resolve()) for p in parts])
 
 # --- Upstage Layout 분석 ---
 @router.post("/analyze", response_model=AnalyzeResponse)
@@ -106,12 +82,13 @@ def extract_endpoint(req: ExtractRequest):
     pdf = Path(req.pdf_path)
     if not pdf.exists():
         raise HTTPException(status_code=404, detail="pdf_path가 존재하지 않음")
-    proc = PDFImageProcessor(str(pdf))
+    # 산출물은 ARTIFACT_DIR/<원본파일명>/ 구조로 저장
+    base = ARTIFACT_DIR / pdf.stem
+    proc = PDFImageProcessor(str(pdf), output_folder=str(base))
     proc.extract_images()  # 이미지추출 메서드 실행 html/md 생성
-    base = pdf.with_suffix("")  # 폴더
     images = sorted([str(p.resolve()) for p in base.glob("page_*_figure_*.png")])
-    html_path = base / f"{base.name}.html"
-    md_path = base / f"{base.name}.md"
+    html_path = base / f"{pdf.stem}.html"
+    md_path = base / f"{pdf.stem}.md"
     return ExtractResponse(
         output_folder=str(base.resolve()),
         images=images,
@@ -123,38 +100,34 @@ def extract_endpoint(req: ExtractRequest):
 @router.post("/run", response_model=RunResponse)
 def run_endpoint(req: RunRequest):
     # 1) split
-    pdf_path = Path(req.pdf_path)
-    out_dir = ARTIFACT_DIR / pdf_path.stem
-    out_dir.mkdir(parents=True, exist_ok=True)
-    parts = split_pdf(str(pdf_path), out_dir=out_dir, batch_size=req.batch_size)
+    parts = split_pdf(req.pdf_path, batch_size=req.batch_size)
     # 2) analyze
     api_key = req.upstage_api_key or os.getenv("UPSTAGE_API_KEY")
     if not api_key:
         raise HTTPException(status_code=400, detail="UPSTAGE_API_KEY 필요")
     analyzer = LayoutAnalyzer(api_key)
     json_paths: Dict[str, str] = {}
-    json_files: List[str] = []
     for part in parts:
         try:
             json_path = analyzer.execute(part)
         except ValueError as e:
             raise HTTPException(status_code=502, detail=str(e))
-        json_files.append(json_path)
-        json_paths[str(Path(part).relative_to(ARTIFACT_DIR))] = str(Path(json_path).relative_to(ARTIFACT_DIR))
+        json_paths[str(Path(part).resolve())] = str(Path(json_path).resolve())
     # 3) extract + render
     ## proc <- PDF 처리기(Processor) 인스턴스 의 변수
-    proc = PDFImageProcessor(str(pdf_path), json_files=json_files, output_folder=str(out_dir))
+    # 산출물은 ARTIFACT_DIR/<원본파일명>/ 구조로 저장
+    base = ARTIFACT_DIR / Path(req.pdf_path).stem
+    proc = PDFImageProcessor(req.pdf_path, output_folder=str(base))
     proc.extract_images()
-    base = out_dir
-    images = sorted([str(p.relative_to(ARTIFACT_DIR)) for p in base.glob("page_*_figure_*.png")])
+    images = sorted([str(p.resolve()) for p in base.glob("page_*_figure_*.png")])
     html_path = base / f"{base.name}.html"
     md_path = base / f"{base.name}.md"
     return RunResponse(
-        parts=[str(Path(p).relative_to(ARTIFACT_DIR)) for p in parts],
+        parts=[str(Path(p).resolve()) for p in parts],
         json_paths=json_paths,
-        output_folder=str(base.relative_to(ARTIFACT_DIR)),
-        html_path=str(html_path.relative_to(ARTIFACT_DIR)),
-        md_path=str(md_path.relative_to(ARTIFACT_DIR)),
+        output_folder=str(base.resolve()),
+        html_path=str(html_path.resolve()),
+        md_path=str(md_path.resolve()),
         images=images,
     )
 
