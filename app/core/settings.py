@@ -11,8 +11,8 @@ class Settings(BaseSettings):
     )
 
     OPENAI_API_KEY: str | None = None
-    ANTHROPIC_API_KEY: str | None = None
-    GOOGLE_API_KEY: str | None = None
+    # ANTHROPIC_API_KEY: str | None = None
+    # GOOGLE_API_KEY: str | None = None
     FRIENDLI_API_KEY: str | None = None
     UPLOAD_FOLDER: str = os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
