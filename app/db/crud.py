@@ -1,12 +1,6 @@
 from sqlalchemy.orm import Session
 from . import models
-from app.schemas.db import (
-    FileCreate,
-    DocumentCreate,
-    ChunkCreate,
-    EmbeddingCreate,
-    ChatHistoryCreate,
-)
+from app.schemas.db import (FileCreate, DocumentCreate, ChunkCreate, EmbeddingCreate, ChatHistoryCreate)
 
 
 def _commit(db: Session) -> None:
