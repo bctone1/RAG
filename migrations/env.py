@@ -7,8 +7,7 @@ import os, sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 from app.db.base import Base
-# this is the Alembic Config object, which provides
-# access to the values within the .ini file in use.
+from app.db import models
 
 config = context.config
 
