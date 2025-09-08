@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from fastapi.responses import FileResponse
 from shutil import copyfileobj
 from starlette.concurrency import run_in_threadpool
@@ -6,6 +6,11 @@ from pathlib import Path
 from typing import List, Dict
 import os
 from dotenv import load_dotenv
+from sqlalchemy.orm import Session
+
+from app.db.session import get_db
+from app.db import crud
+from app.schemas.db import FileCreate
 
 from app.schemas.ingestion import (
     UploadResponse, SplitRequest, SplitResponse,
@@ -34,7 +39,10 @@ for p in (UPLOAD_DIR, ARTIFACT_DIR):
 
 # --- 파일 업로드 ---
 @router.post("/upload", response_model=UploadResponse)
-async def upload_file(file: UploadFile = File(...)):
+async def upload_file(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+):
     if not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="PDF만 허용")
     dest = (UPLOAD_DIR / file.filename).resolve()
@@ -49,9 +57,22 @@ async def upload_file(file: UploadFile = File(...)):
         if not dest.is_relative_to(UPLOAD_DIR):
             raise HTTPException(status_code=400, detail="업로드 경로 밖의 파일은 허용되지 않습니다")
         i += 1
-    with dest.open('wb') as out_file:
+    with dest.open("wb") as out_file:
         await run_in_threadpool(copyfileobj, file.file, out_file)
-    return UploadResponse(filename=dest.name, path=str(dest), size=dest.stat().st_size)
+    db_file = crud.create_file(
+        db,
+        FileCreate(
+            original_name=file.filename,
+            mime_type=file.content_type,
+            storage_path=str(dest),
+        ),
+    )
+    return UploadResponse(
+        filename=dest.name,
+        path=str(dest),
+        size=dest.stat().st_size,
+        file_id=db_file.id,
+    )
 
 # --- PDF 분할 ---
 @router.post("/split", response_model=SplitResponse)
