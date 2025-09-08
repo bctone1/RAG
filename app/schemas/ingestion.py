@@ -65,3 +65,7 @@ class RunResponse(BaseModel):
     html_path: str
     md_path: str
     images: List[str]
+    chunks: Optional[List[str]] = None
+    embeddings: Optional[List[List[float]]] = None
+    embedding_model: Optional[str] = None
+    embedding_dim: Optional[int] = None

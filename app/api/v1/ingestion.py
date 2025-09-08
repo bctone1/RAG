@@ -3,7 +3,7 @@ from fastapi.responses import FileResponse
 from shutil import copyfileobj
 from starlette.concurrency import run_in_threadpool
 from pathlib import Path
-from typing import List, Dict
+from typing import List, Dict, Optional
 import os
 from dotenv import load_dotenv
 from sqlalchemy.orm import Session
@@ -23,6 +23,8 @@ from app.schemas.ingestion import (
 from app.services.ingestion.preprocess.split_pdf import split_pdf
 from app.services.ingestion.preprocess.analyzer_upstage import LayoutAnalyzer
 from app.services.ingestion.preprocess.extract_assets import PDFImageProcessor
+from app.services.ingestion.chunking import chunk_text
+from app.services.ingestion.embedding import embed_text
 
 # render_html_md 가 별도면, PDFImageProcessor 내부에서 호출되도록 구성했거나 필요 시 아래 import 후 사용
 # from app.services.ingestion.preprocess.render_html_md import render_html_and_md
@@ -145,12 +147,24 @@ def run_endpoint(req: RunRequest):
     # 3) extract + render
     ## proc <- PDF 처리기(Processor) 인스턴스 의 변수
     # 산출물은 ARTIFACT_DIR/<원본파일명>/ 구조로 저장
-        base = ARTIFACT_DIR / pdf.stem
+    base = ARTIFACT_DIR / pdf.stem
     proc = PDFImageProcessor(str(pdf), output_folder=str(base))
     proc.extract_images()
     images = sorted([str(p.resolve()) for p in base.glob("page_*_figure_*.png")])
     html_path = base / f"{base.name}.html"
     md_path = base / f"{base.name}.md"
+    # 4) chunking & embedding
+    with md_path.open("r", encoding="utf-8") as f:
+        md_text = f.read()
+    chunks = chunk_text(md_text)
+    chunk_texts = [c["text"] for c in chunks]
+    embeddings: List[List[float]] = []
+    model_name: Optional[str] = None
+    dim: Optional[int] = None
+    for c in chunk_texts:
+        vec, model_name, dim = embed_text(c)
+        embeddings.append(vec)
+
     return RunResponse(
         parts=[str(Path(p).resolve()) for p in parts],
         json_paths=json_paths,
@@ -158,9 +172,13 @@ def run_endpoint(req: RunRequest):
         html_path=str(html_path.resolve()),
         md_path=str(md_path.resolve()),
         images=images,
+        chunks=chunk_texts,
+        embeddings=embeddings,
+        embedding_model=model_name,
+        embedding_dim=dim,
     )
 
-# --- 산출물 바로 내려받기(선택) ---
+# --- 산출물 바로 내려받기(추후 필요하면) ---
 @router.get("/artifact")
 def get_artifact(path: str):
     f = Path(path)
