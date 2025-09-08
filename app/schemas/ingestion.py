@@ -1,6 +1,6 @@
 import os
 from typing import List, Optional, Dict
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, FilePath
 
 # 업로드 완료 시 파일 메타 반환
 class UploadResponse(BaseModel):
@@ -13,7 +13,7 @@ class UploadResponse(BaseModel):
 # PDF 분할 요청 파라미터
 class SplitRequest(BaseModel):
     """분할 대상 PDF 경로와 배치 크기"""
-    pdf_path: str
+    pdf_path: FilePath
     batch_size: int = 10
 
 # PDF 분할 결과
@@ -37,7 +37,7 @@ class AnalyzeResponse(BaseModel):
 # Asset 추출 및 렌더 요청
 class ExtractRequest(BaseModel):
     """원본 PDF 경로(동일 prefix의 *.json 자동 탐색)"""
-    pdf_path: str  # 같은 prefix의 *.json 을 자동 탐색
+    pdf_path: FilePath  # 같은 prefix의 *.json 을 자동 탐색
 
 # Asset 추출 및 렌더 결과
 class ExtractResponse(BaseModel):
@@ -50,7 +50,7 @@ class ExtractResponse(BaseModel):
 # end-to-end 파이프라인 실행 요청
 class RunRequest(BaseModel):
     """PDF → 분할→분석→추출→HTML/MD까지 원샷 실행"""
-    pdf_path: str
+    pdf_path: FilePath
     batch_size: int = 10
     upstage_api_key: Optional[str] = Field(
         default_factory=lambda: os.getenv("UPSTAGE_API_KEY")
