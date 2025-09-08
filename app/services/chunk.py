@@ -2,19 +2,24 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import List, Tuple
-import os
+import os, requests
 import hashlib
 import numpy as np
-import fitz  # type: ignore
+# import fitz  # type: ignore
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 
-def extract_text_from_pdf(pdf_path: str | Path) -> str:
-    """Extract text from a PDF using PyMuPDF."""
-    doc = fitz.open(str(pdf_path))
-    texts = [page.get_text() for page in doc]
-    doc.close()
-    return "\n".join(texts)
+def extract_text_from_pdf_upstage(pdf_path: str | Path, api_key: str | None = None) -> str:
+    api_key = api_key or os.getenv("UPSTAGE_API_KEY")
+    if not api_key:
+        raise ValueError("UPSTAGE_API_KEY가 필요합니다.")
+
+    url = "https://api.upstage.ai/v1/document-ai/extract-text"
+    headers = {"Authorization": f"Bearer {api_key}"}
+    with open(pdf_path, "rb") as f:
+        resp = requests.post(url, headers=headers, files={"document": f})
+    resp.raise_for_status()
+    return resp.json()["text"]
 
 
 def chunk_text(text: str, chunk_size: int = 1000, chunk_overlap: int = 200) -> List[str]:
