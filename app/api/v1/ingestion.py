@@ -38,12 +38,16 @@ async def upload_file(file: UploadFile = File(...)):
     if not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="PDF만 허용")
     dest = (UPLOAD_DIR / file.filename).resolve()
+    if not dest.is_relative_to(UPLOAD_DIR):
+        raise HTTPException(status_code=400, detail="업로드 경로 밖의 파일은 허용되지 않습니다")
     # 중복 방지
     i = 1
     while dest.exists():
         stem = dest.stem
         suffix = dest.suffix
         dest = (UPLOAD_DIR / f"{stem}_{i}{suffix}").resolve()
+        if not dest.is_relative_to(UPLOAD_DIR):
+            raise HTTPException(status_code=400, detail="업로드 경로 밖의 파일은 허용되지 않습니다")
         i += 1
     with dest.open('wb') as out_file:
         await run_in_threadpool(copyfileobj, file.file, out_file)
