@@ -22,6 +22,8 @@ def split_pdf(filepath, out_dir: Path | str | None = None, batch_size: int = 10)
         분할할 페이지 묶음 크기.
     """
     filepath = Path(filepath)
+    if not filepath.exists():
+        raise FileNotFoundError(f"입력한 PDF 파일을 찾을 수 없습니다: {filepath}")
     out_dir = Path(out_dir) if out_dir else filepath.parent
     out_dir.mkdir(parents=True, exist_ok=True)
     base_name = filepath.stem
