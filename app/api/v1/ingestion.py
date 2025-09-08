@@ -10,7 +10,12 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.db import crud
-from app.schemas.db import FileCreate
+from app.schemas.db import (
+    FileCreate,
+    DocumentCreate,
+    ChunkCreate,
+    EmbeddingCreate,
+)
 
 from app.schemas.ingestion import (
     UploadResponse, SplitRequest, SplitResponse,
@@ -18,14 +23,15 @@ from app.schemas.ingestion import (
     ExtractRequest, ExtractResponse,
     RunRequest, RunResponse)
 
-
 # 모듈들은 사용자 분리 구조에 맞춰 import
 from app.services.ingestion.preprocess.split_pdf import split_pdf
 from app.services.ingestion.preprocess.analyzer_upstage import LayoutAnalyzer
 from app.services.ingestion.preprocess.extract_assets import PDFImageProcessor
-from app.services.ingestion.chunking import chunk_text
-from app.services.ingestion.embedding import embed_text
-
+from app.services.chunk import (
+    extract_text_from_pdf,
+    chunk_text,
+    get_embedding,
+)
 # render_html_md 가 별도면, PDFImageProcessor 내부에서 호출되도록 구성했거나 필요 시 아래 import 후 사용
 # from app.services.ingestion.preprocess.render_html_md import render_html_and_md
 
@@ -126,27 +132,68 @@ def extract_endpoint(req: ExtractRequest):
 
 # --- 전체 파이프라인 실행 ---
 @router.post("/run", response_model=RunResponse)
-def run_endpoint(req: RunRequest):
+def run_endpoint(req: RunRequest, db: Session = Depends(get_db)):
     pdf = Path(req.pdf_path)
     if not pdf.exists():
         raise HTTPException(status_code=404, detail="pdf_path가 존재하지 않음")
-    # 1) split
+
+    db_file = crud.create_file(
+        db,
+        FileCreate(
+            original_name=pdf.name,
+            mime_type="application/pdf",
+            storage_path=str(pdf.resolve()),
+        ),
+    )
     parts = split_pdf(str(pdf), batch_size=req.batch_size)
-    # 2) analyze
+
+
     api_key = req.upstage_api_key or os.getenv("UPSTAGE_API_KEY")
     if not api_key:
         raise HTTPException(status_code=400, detail="UPSTAGE_API_KEY 필요")
     analyzer = LayoutAnalyzer(api_key)
     json_paths: Dict[str, str] = {}
+    documents: list[tuple[str, int]] = []
     for part in parts:
         try:
             json_path = analyzer.execute(part)
         except ValueError as e:
             raise HTTPException(status_code=502, detail=str(e))
         json_paths[str(Path(part).resolve())] = str(Path(json_path).resolve())
-    # 3) extract + render
-    ## proc <- PDF 처리기(Processor) 인스턴스 의 변수
-    # 산출물은 ARTIFACT_DIR/<원본파일명>/ 구조로 저장
+
+        doc = crud.create_document(
+            db,
+            DocumentCreate(
+                file_id=db_file.id,
+                title=Path(part).name,
+                doc_meta={"pdf_path": str(Path(part).resolve()), "json_path": str(Path(json_path).resolve())},
+            ),
+        )
+        documents.append((part, doc.id))
+
+    for part, doc_id in documents:
+        text = extract_text_from_pdf(part)
+        pieces = chunk_text(text)
+        for order, piece in enumerate(pieces, start=1):
+            chunk_db = crud.create_chunk(
+                db,
+                ChunkCreate(
+                    document_id=doc_id,
+                    content=piece,
+                    chunk_order=order,
+                ),
+            )
+            vec, model_name = get_embedding(piece)
+            crud.create_embedding(
+                db,
+                EmbeddingCreate(
+                    chunk_id=chunk_db.id,
+                    vector=vec,
+                    model=model_name,
+                    dim=len(vec),
+                ),
+            )
+
     base = ARTIFACT_DIR / pdf.stem
     proc = PDFImageProcessor(str(pdf), output_folder=str(base))
     proc.extract_images()
