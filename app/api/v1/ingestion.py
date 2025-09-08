@@ -125,8 +125,11 @@ def extract_endpoint(req: ExtractRequest):
 # --- 전체 파이프라인 실행 ---
 @router.post("/run", response_model=RunResponse)
 def run_endpoint(req: RunRequest):
+    pdf = Path(req.pdf_path)
+    if not pdf.exists():
+        raise HTTPException(status_code=404, detail="pdf_path가 존재하지 않음")
     # 1) split
-    parts = split_pdf(req.pdf_path, batch_size=req.batch_size)
+    parts = split_pdf(str(pdf), batch_size=req.batch_size)
     # 2) analyze
     api_key = req.upstage_api_key or os.getenv("UPSTAGE_API_KEY")
     if not api_key:
@@ -142,8 +145,8 @@ def run_endpoint(req: RunRequest):
     # 3) extract + render
     ## proc <- PDF 처리기(Processor) 인스턴스 의 변수
     # 산출물은 ARTIFACT_DIR/<원본파일명>/ 구조로 저장
-    base = ARTIFACT_DIR / Path(req.pdf_path).stem
-    proc = PDFImageProcessor(req.pdf_path, output_folder=str(base))
+        base = ARTIFACT_DIR / pdf.stem
+    proc = PDFImageProcessor(str(pdf), output_folder=str(base))
     proc.extract_images()
     images = sorted([str(p.resolve()) for p in base.glob("page_*_figure_*.png")])
     html_path = base / f"{base.name}.html"
