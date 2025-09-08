@@ -7,7 +7,7 @@ import os, sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 from app.db.base import Base
-from app.db import models
+# from app.db import models
 
 config = context.config
 
